@@ -58,6 +58,8 @@ arg1 = event_duration_start
 arg2 = duration
 arg3 = trigger
 
+wrap_event_duration = lambda t, x: event_duration(t,x,event_duration_start, duration, trigger)
+
 #def  event_duration(t, y, event_duration, event_duration_start):
 #    return y[1] # <- CHECK WHY THIS ONE
 
@@ -69,7 +71,7 @@ t_span = np.linspace(t_0, t_end, 200)
 sol = solve_ivp(ode_batch_stage_duration, [t_0, t_end], x_0, args=(event_duration_start, duration, trigger), 
                 t_eval=t_span, method='RK45', events=(
                     lambda t, x: transfer_trigger(t,x), 
-                    lambda t, x, event_duration_start, duration, trigger: event_duration(t,x,event_duration_start, duration, trigger)))
+                    wrap_event_duration))
 
 # Get the number of evaluations of the solver
 print('Number of evaluations: {:.0f}'.format(sol.nfev))
