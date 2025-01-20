@@ -4,7 +4,7 @@ from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 
 # Import custom functions
-from Supporters import Parameter_update, stage_transfer_equations, event_duration 
+from Supporters import Parameter_update, stage_transfer_equations
 
 # import model components
 from Parameters_tanks import Fixed_parameters 
@@ -30,8 +30,21 @@ def transfer_trigger(t, y):
 
 transfer_trigger.terminal = True
 
+# initiate any event duration timers
+event_duration_start = None
+duration = 5 #h
+trigger = par.mu_max * 0.98 #1/h
+
+event_args = [event_duration_start, duration, trigger]
+arg1 = event_duration_start
+arg2 = duration
+arg3 = trigger
+
+
+wrap_event_duration = lambda t, x: event_duration(t,x,*event_args)
+
 # define mu_trigger
-def event_duration(t, y, trigger, duration, event_duration_start):
+def event_duration(t, y, *args):
     # specify state variable/calculated value to be tracked:
     y_tracked = y[0]
     
@@ -49,16 +62,7 @@ def event_duration(t, y, trigger, duration, event_duration_start):
             event_duration_start = None
             
     return 1
-# initiate any event duration timers
-event_duration_start = None
-duration = 5 #h
-trigger = par.mu_max * 0.98 #1/h
-event_args = [event_duration_start, duration, trigger]
-arg1 = event_duration_start
-arg2 = duration
-arg3 = trigger
 
-wrap_event_duration = lambda t, x: event_duration(t,x,event_duration_start, duration, trigger)
 
 #def  event_duration(t, y, event_duration, event_duration_start):
 #    return y[1] # <- CHECK WHY THIS ONE
