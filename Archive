@@ -1,0 +1,89 @@
+import numpy as np
+from scipy.integrate import solve_ivp
+import matplotlib.pyplot as plt
+
+# Fixed parameters
+V_tank_1 = 100  # L
+V_tank_2 = 1000  # L
+OTR_max = 140  # mmol/h <- CHECK UNIT!! (TEA file EV drive has the value)
+Y_os = 6  # mol/mol <- PLACEHOLDER
+c_x_max = 100  # g/L For yeast in industrial fermentation
+K_s = 1.4*1e-3 # mmol/L <--- PLACEHOLDER
+mu_max = 0.25  # 1/h
+q_s_max = 2.84*1e-1 # g_s/g_x/h <--- PLACEHOLDER
+f_hs = 0.3  # -  Represents amount of gas holdup/headspace reserved for gas phase in tank
+c_s_new = 200  # g/L
+
+# Variable parameters
+# trigger = 0       # Custom trigger value. Unit can differ
+
+# Pre-calculation
+V_L = V_tank_1 * f_hs
+
+# Initial values
+c_x0 = 1  # g/L
+c_s0 = c_s_new
+
+x_0 = [c_x0, c_s0]
+
+
+# Define ODE-system
+def ode_batch_stage(t, x):
+    # State variables
+    c_x, c_s = x
+
+    # Algebraic equations
+    mu = mu_max * (c_s / (c_s + K_s))
+    q_s = q_s_max * (c_s / (c_s + K_s))
+
+    # Differential Equations
+    dcxdt = c_x * mu
+    dcsdt = -c_s * q_s
+
+    dx = [dcxdt, dcsdt]
+    return dx
+
+
+# Define t_span (To be converted into event stop)
+# Do I need to set all intervals or is it fine to let it choose (preferred)
+t_0, t_end = 0, 12  # h
+t_span = np.linspace(t_0, t_end, 100)
+
+# Initiate simulation
+sol = solve_ivp(ode_batch_stage, [t_0, t_end], x_0, t_eval=t_span, method='RK45')
+
+# Get the number of evaluations of the solver
+print('Number of evaluations: {:.0f}'.format(sol.nfev))
+
+
+# Retrieve solution
+t  = sol.t          # Time points
+c_x = sol.y[0, :]    # Concentration of X (gX/L)
+c_s = sol.y[1, :]    # Concentration of S (gS/L)
+
+plt.subplot(2,1,1)
+plt.plot(t, c_x)
+plt.legend('X')
+plt.xlabel('Time (h)')
+plt.ylabel('Biomass (g/L)')
+
+plt.subplot(2,1,2)
+plt.plot(t, c_s)
+plt.legend('S')
+plt.xlabel('Time (h)')
+plt.ylabel('Substrate (g/L)')
+
+'''
+def stage_transfer_equations ():
+    # Unpack and define values from previous stage
+    # PLACEHOLDER
+
+    V_L_old = V_L           # Later to be replaced with V_L_end when I implement multiple stages
+    V_L_new = (V_tank_2 * f_hs) - V_L_old
+
+    c_x0 = (c_x_end * V_L_old)/(V_L_old + V_L_new)
+    c_s0 = ((c_s_end * V_L_old)+(c_s_new*V_L_new))/(V_L_old + V_L_new)
+
+    x_0 = [c_x0, c_s0]
+    return [x_0, V_L_new]
+'''
